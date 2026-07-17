@@ -41,6 +41,41 @@ export type Targets = {
   fatG: number
 }
 
+// Body measurements: optional circumference tracking. All parts nullable.
+export type BodyPart = 'waist' | 'chest' | 'arms' | 'thighs' | 'hips'
+
+export type BodyMeasurement = {
+  id: string
+  user_id: string
+  log_date: string
+  waist_cm: number | null
+  chest_cm: number | null
+  arms_cm: number | null
+  thighs_cm: number | null
+  hips_cm: number | null
+  notes: string | null
+  created_at: string
+}
+
+export const BODY_PARTS: BodyPart[] = ['waist', 'chest', 'arms', 'thighs', 'hips']
+
+export const BODY_PART_LABELS: Record<BodyPart, string> = {
+  waist: 'Waist',
+  chest: 'Chest',
+  arms: 'Arms',
+  thighs: 'Thighs',
+  hips: 'Hips',
+}
+
+// Maps a body part to its measurement column on the body_measurements row.
+export const BODY_PART_COLUMN: Record<BodyPart, keyof BodyMeasurement> = {
+  waist: 'waist_cm',
+  chest: 'chest_cm',
+  arms: 'arms_cm',
+  thighs: 'thighs_cm',
+  hips: 'hips_cm',
+}
+
 export const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
   sedentary: 'Sedentary (desk job, little movement)',
   lightly_active: 'Lightly active (on your feet some of the day)',

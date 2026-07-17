@@ -76,10 +76,28 @@ create table if not exists meals (
   created_at timestamptz default now()
 );
 
+-- ---------------------------------------------------------------------------
+-- body_measurements: optional, opt-in circumference tracking (one row per day)
+-- ---------------------------------------------------------------------------
+create table if not exists body_measurements (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  log_date date not null,
+  waist_cm numeric,
+  chest_cm numeric,
+  arms_cm numeric,
+  thighs_cm numeric,
+  hips_cm numeric,
+  notes text,
+  created_at timestamptz default now(),
+  unique (user_id, log_date)
+);
+
 -- Helpful lookup indexes for per-day queries.
 create index if not exists daily_logs_user_date_idx on daily_logs (user_id, log_date);
 create index if not exists workouts_user_date_idx on workouts (user_id, log_date);
 create index if not exists meals_user_date_idx on meals (user_id, log_date);
+create index if not exists body_measurements_user_date_idx on body_measurements (user_id, log_date);
 
 -- Keep profiles.updated_at fresh.
 create or replace function set_updated_at()
@@ -102,11 +120,13 @@ alter table profiles enable row level security;
 alter table daily_logs enable row level security;
 alter table workouts enable row level security;
 alter table meals enable row level security;
+alter table body_measurements enable row level security;
 
 drop policy if exists "own rows only" on profiles;
 drop policy if exists "own rows only" on daily_logs;
 drop policy if exists "own rows only" on workouts;
 drop policy if exists "own rows only" on meals;
+drop policy if exists "own rows only" on body_measurements;
 
 create policy "own rows only" on profiles for all
   using (auth.uid() = id) with check (auth.uid() = id);
@@ -115,4 +135,6 @@ create policy "own rows only" on daily_logs for all
 create policy "own rows only" on workouts for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows only" on meals for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows only" on body_measurements for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { requireProfile, verifyUser } from '@/lib/auth/dal'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { FoodPreferences } from '@/lib/fitness/types'
@@ -50,6 +51,25 @@ export default async function SettingsPage() {
       </p>
 
       <SettingsForm initial={initial} />
+
+      <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Body measurements
+            </p>
+            <p className="text-xs text-muted">
+              Optionally track waist, chest, arms, and more over time.
+            </p>
+          </div>
+          <Link
+            href="/measurements"
+            className="flex-shrink-0 rounded-lg border border-border bg-surface-2 px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-accent"
+          >
+            Open
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

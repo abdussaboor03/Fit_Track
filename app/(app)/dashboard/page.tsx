@@ -185,6 +185,12 @@ export default async function DashboardPage() {
         >
           Daily check-in
         </Link>
+        <Link
+          href="/measurements"
+          className="rounded-xl border border-border bg-surface-2 px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:border-accent"
+        >
+          Measurements
+        </Link>
       </div>
     </div>
   )
