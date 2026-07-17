@@ -14,7 +14,16 @@ type Analysis = {
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
-export function MealForm() {
+export type RecentMeal = {
+  mealName: string
+  description: string
+  calories: number | null
+  proteinG: number | null
+  carbsG: number | null
+  fatG: number | null
+}
+
+export function MealForm({ recent = [] }: { recent?: RecentMeal[] }) {
   const [state, formAction, pending] = useActionState<MealState, FormData>(
     saveMeal,
     undefined,
@@ -97,9 +106,48 @@ export function MealForm() {
     }
   }
 
+  function prefillFrom(meal: RecentMeal) {
+    setMealName(meal.mealName)
+    setDescription(meal.description)
+    setCalories(meal.calories != null ? String(meal.calories) : '')
+    setProtein(meal.proteinG != null ? String(meal.proteinG) : '')
+    setCarbs(meal.carbsG != null ? String(meal.carbsG) : '')
+    setFat(meal.fatG != null ? String(meal.fatG) : '')
+    setSource('manual')
+    setConfidence(null)
+    setAnalyzeError(null)
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-6">
       <input type="hidden" name="source" value={source} />
+
+      {/* Recent meals — tap to re-log with saved macros */}
+      {recent.length > 0 && (
+        <section className="rounded-2xl border border-border bg-surface p-6">
+          <p className="text-sm font-medium">Recent meals</p>
+          <p className="mt-1 text-xs text-muted">
+            Tap one to pre-fill the form, then review and save.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {recent.map((meal) => (
+              <button
+                key={meal.mealName}
+                type="button"
+                onClick={() => prefillFrom(meal)}
+                className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-accent"
+              >
+                <span className="font-medium">{meal.mealName}</span>
+                {meal.calories != null && (
+                  <span className="ml-1.5 text-xs text-muted">
+                    {meal.calories} kcal
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Photo analysis */}
       <section className="rounded-2xl border border-border bg-surface p-6">
