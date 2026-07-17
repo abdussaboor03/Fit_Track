@@ -23,6 +23,7 @@ import {
   type WorkoutFrequency,
 } from '@/lib/fitness/types'
 import { PreferencePicker } from '@/components/preference-picker'
+import { BmiStat } from '@/components/bmi-stat'
 import { saveProfile, type OnboardingState } from '@/app/onboarding/actions'
 
 type WeightUnit = 'kg' | 'lb'
@@ -381,6 +382,8 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             placeholder={weightUnit === 'kg' ? '75' : '165'}
           />
         </Field>
+
+        <BmiStat heightCm={heightCmNum} weightKg={currentWeightKg} />
       </Section>
 
       {/* Goal */}

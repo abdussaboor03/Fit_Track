@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireProfile, verifyUser } from '@/lib/auth/dal'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { formatShortDate, isoDaysAgo, todayISO } from '@/lib/fitness/date'
+import { BmiStat } from '@/components/bmi-stat'
 import { WeightChart, type WeightPoint } from './weight-chart'
 
 export default async function DashboardPage() {
@@ -120,17 +121,26 @@ export default async function DashboardPage() {
         <WeightChart data={chartData} unit="kg" />
       </section>
 
-      {/* Training */}
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <p className="text-sm text-muted">This week&apos;s training</p>
-        <p className="mt-1 text-3xl font-bold text-foreground">
-          {gymThisWeek}
-          <span className="text-base font-normal text-muted">
-            {' '}
-            {gymThisWeek === 1 ? 'session' : 'sessions'}
-          </span>
-        </p>
-      </section>
+      {/* Training + BMI */}
+      <div className="grid grid-cols-2 gap-3">
+        <section className="rounded-2xl border border-border bg-surface p-6">
+          <p className="text-sm text-muted">This week&apos;s training</p>
+          <p className="mt-1 text-3xl font-bold text-foreground">
+            {gymThisWeek}
+            <span className="text-base font-normal text-muted">
+              {' '}
+              {gymThisWeek === 1 ? 'session' : 'sessions'}
+            </span>
+          </p>
+        </section>
+        {latestWeight != null && profile.height_cm != null && (
+          <BmiStat
+            heightCm={Number(profile.height_cm)}
+            weightKg={latestWeight}
+            compact
+          />
+        )}
+      </div>
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">

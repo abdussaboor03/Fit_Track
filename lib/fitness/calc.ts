@@ -38,6 +38,33 @@ export function ageFromDob(dob: string | Date, on: Date = new Date()): number {
   return age
 }
 
+/* ---------- BMI (Body Mass Index) ---------- */
+
+export type BmiCategory = 'underweight' | 'normal' | 'overweight' | 'obese'
+
+// BMI = weight(kg) / height(m)^2. Returns null when inputs aren't usable.
+export function bmiFrom(heightCm: number, weightKg: number): number | null {
+  if (!(heightCm > 0) || !(weightKg > 0)) return null
+  const m = heightCm / 100
+  return Number((weightKg / (m * m)).toFixed(1))
+}
+
+// Standard WHO adult BMI bands. BMI ignores body composition (muscle vs. fat),
+// so it's a rough screen, not a health verdict.
+export function bmiCategory(bmi: number): BmiCategory {
+  if (bmi < 18.5) return 'underweight'
+  if (bmi < 25) return 'normal'
+  if (bmi < 30) return 'overweight'
+  return 'obese'
+}
+
+export const BMI_CATEGORY_LABELS: Record<BmiCategory, string> = {
+  underweight: 'Underweight',
+  normal: 'Normal',
+  overweight: 'Overweight',
+  obese: 'Obese',
+}
+
 /* ---------- BMR (Mifflin-St Jeor) ---------- */
 
 export function bmrMifflin(params: {
