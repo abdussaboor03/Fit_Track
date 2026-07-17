@@ -23,6 +23,7 @@ export type Profile = {
   workout_frequency: WorkoutFrequency | null
   dietary_restriction: string | null
   food_preferences: FoodPreferences | null
+  water_target_ml: number | null
   daily_calorie_target: number | null
   daily_protein_g: number | null
   daily_carb_g: number | null

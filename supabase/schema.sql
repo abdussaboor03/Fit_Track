@@ -18,6 +18,7 @@ create table if not exists profiles (
   workout_frequency text check (workout_frequency in ('none','1-2','3-4','5+')),
   dietary_restriction text,
   food_preferences jsonb,
+  water_target_ml int default 2500,
   daily_calorie_target int,
   daily_protein_g int,
   daily_carb_g int,
@@ -36,6 +37,7 @@ create table if not exists daily_logs (
   weight_kg numeric,
   went_gym boolean default false,
   steps int,
+  water_ml int default 0,
   notes text,
   created_at timestamptz default now(),
   unique (user_id, log_date)

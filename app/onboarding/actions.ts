@@ -52,6 +52,14 @@ export async function saveProfile(
   ).trim()
   const foodPreferences = parseFoodPreferences(formData.get('food_preferences'))
 
+  // Optional water target — only present from Settings; onboarding leaves the
+  // column at its default. Clamp to a sane range when supplied.
+  const waterTargetRaw = String(formData.get('water_target_ml') ?? '').trim()
+  const waterTargetMl =
+    waterTargetRaw === ''
+      ? null
+      : Math.max(250, Math.min(10000, Math.round(Number(waterTargetRaw))))
+
   // Validation.
   if (!fullName) return { error: 'Please enter your name.' }
   if (!SEXES.includes(sex)) return { error: 'Please select your sex.' }
@@ -98,6 +106,8 @@ export async function saveProfile(
     workout_frequency: workoutFrequency,
     dietary_restriction: dietaryRestriction || null,
     food_preferences: foodPreferences,
+    // Only overwrite the water target when Settings submitted one.
+    ...(waterTargetMl !== null ? { water_target_ml: waterTargetMl } : {}),
     daily_calorie_target: targets.calories,
     daily_protein_g: targets.proteinG,
     daily_carb_g: targets.carbG,

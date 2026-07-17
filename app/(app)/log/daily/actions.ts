@@ -77,3 +77,28 @@ export async function saveDailyLog(
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
+
+// Sets today's absolute water total (ml). Kept separate from the check-in
+// submit so quick-add taps persist instantly without requiring a weight entry.
+// Upserts only the water column, leaving any existing weight/steps/etc. intact.
+export async function setWaterMl(logDate: string, amountMl: number) {
+  const { userId } = await verifyUser()
+  const supabase = await createSupabaseServerClient()
+
+  const clamped = Math.max(0, Math.min(30000, Math.round(amountMl)))
+  const date = logDate || todayISO()
+
+  const { error } = await supabase.from('daily_logs').upsert(
+    { user_id: userId, log_date: date, water_ml: clamped },
+    { onConflict: 'user_id,log_date' },
+  )
+
+  if (error) {
+    console.error('[setWaterMl] error:', error.message)
+    return { ok: false as const, error: 'Could not save water. Please try again.' }
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/log/daily')
+  return { ok: true as const, waterMl: clamped }
+}

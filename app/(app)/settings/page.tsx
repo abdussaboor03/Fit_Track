@@ -36,6 +36,7 @@ export default async function SettingsPage() {
     workoutFrequency: profile.workout_frequency ?? '',
     dietaryRestriction: profile.dietary_restriction ?? '',
     foodPreferences: (profile.food_preferences as FoodPreferences | null) ?? {},
+    waterTargetMl: profile.water_target_ml ?? 2500,
   }
 
   return (

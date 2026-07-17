@@ -47,6 +47,7 @@ export type SettingsInitial = {
   workoutFrequency: WorkoutFrequency | ''
   dietaryRestriction: string
   foodPreferences: FoodPreferences
+  waterTargetMl: number
 }
 
 const DIET_PRESETS: DietPreset[] = ['none', 'halal', 'vegetarian', 'vegan']
@@ -110,6 +111,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const [foodPrefs, setFoodPrefs] = useState<FoodPreferences>(
     initial.foodPreferences,
   )
+  const [waterTarget, setWaterTarget] = useState(String(initial.waterTargetMl))
 
   // Placeholder notification preferences — not persisted yet. Wired up when the
   // notification system lands.
@@ -284,6 +286,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         name="food_preferences"
         value={JSON.stringify(foodPrefs)}
       />
+      <input type="hidden" name="water_target_ml" value={waterTarget} />
 
       {/* About you */}
       <Section title="About you">
@@ -500,6 +503,20 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               placeholder="Describe your restriction"
             />
           )}
+        </Field>
+      </Section>
+
+      {/* Hydration */}
+      <Section title="Hydration">
+        <Field label="Daily water target (ml)">
+          <input
+            className="input"
+            type="number"
+            inputMode="numeric"
+            value={waterTarget}
+            onChange={(e) => setWaterTarget(e.target.value)}
+            placeholder="2500"
+          />
         </Field>
       </Section>
 

@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const weekAgo = isoDaysAgo(6)
   const chartStart = isoDaysAgo(90)
 
-  const [mealsRes, weightsRes, gymRes] = await Promise.all([
+  const [mealsRes, weightsRes, gymRes, todayLogRes] = await Promise.all([
     supabase
       .from('meals')
       .select('calories, protein_g, carbs_g, fat_g')
@@ -33,6 +33,12 @@ export default async function DashboardPage() {
       .eq('user_id', userId)
       .eq('went_gym', true)
       .gte('log_date', weekAgo),
+    supabase
+      .from('daily_logs')
+      .select('water_ml')
+      .eq('user_id', userId)
+      .eq('log_date', today)
+      .maybeSingle(),
   ])
 
   const meals = mealsRes.data ?? []
@@ -55,6 +61,9 @@ export default async function DashboardPage() {
   const latestWeight = chartData.at(-1)?.weight ?? null
 
   const gymThisWeek = gymRes.data?.length ?? 0
+
+  const waterMl = Number(todayLogRes.data?.water_ml ?? 0)
+  const waterTarget = profile.water_target_ml ?? 2500
 
   const calTarget = profile.daily_calorie_target ?? 0
   const calLeft = Math.max(0, calTarget - consumed.calories)
@@ -84,6 +93,26 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted">{calLeft.toLocaleString()} left</p>
         </div>
         <ProgressBar value={consumed.calories} max={calTarget} />
+      </section>
+
+      {/* Water */}
+      <section className="rounded-2xl border border-border bg-surface p-6">
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <p className="text-sm text-muted">Water</p>
+            <p className="text-3xl font-bold text-foreground">
+              {(waterMl / 1000).toFixed(waterMl % 1000 === 0 ? 0 : 1)}
+              <span className="text-base font-normal text-muted">
+                {' '}
+                / {(waterTarget / 1000).toFixed(waterTarget % 1000 === 0 ? 0 : 1)} L
+              </span>
+            </p>
+          </div>
+          <Link href="/log/daily" className="text-sm text-accent hover:underline">
+            + Add
+          </Link>
+        </div>
+        <ProgressBar value={waterMl} max={waterTarget} />
       </section>
 
       {/* Macros */}
