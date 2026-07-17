@@ -23,6 +23,7 @@ export default async function AppLayout({
             <NavLink href="/dashboard">Home</NavLink>
             <NavLink href="/log/meal">Meal</NavLink>
             <NavLink href="/log/daily">Check-in</NavLink>
+            <NavLink href="/history">History</NavLink>
             <NavLink href="/settings">Settings</NavLink>
             <a
               href="/sign-out"
