@@ -1,10 +1,42 @@
-import { requireProfile } from '@/lib/auth/dal'
+import { requireProfile, verifyUser } from '@/lib/auth/dal'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { FoodPreferences } from '@/lib/fitness/types'
-import { SettingsForm } from './settings-form'
+import { SettingsForm, type SettingsInitial } from './settings-form'
 
 export default async function SettingsPage() {
   const profile = await requireProfile()
-  const prefs = (profile.food_preferences as FoodPreferences | null) ?? {}
+  const { userId } = await verifyUser()
+  const supabase = await createSupabaseServerClient()
+
+  // Current weight lives in daily_logs, not profiles — pull the latest entry.
+  const { data: latest } = await supabase
+    .from('daily_logs')
+    .select('weight_kg')
+    .eq('user_id', userId)
+    .not('weight_kg', 'is', null)
+    .order('log_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const initial: SettingsInitial = {
+    fullName: profile.full_name ?? '',
+    sex: profile.sex ?? '',
+    dob: profile.date_of_birth ?? '',
+    heightCm: profile.height_cm != null ? Number(profile.height_cm) : null,
+    currentWeightKg:
+      latest?.weight_kg != null ? Number(latest.weight_kg) : null,
+    goalType: profile.goal_type ?? '',
+    targetWeightKg:
+      profile.target_weight_kg != null ? Number(profile.target_weight_kg) : null,
+    rateKgPerWeek:
+      profile.target_rate_kg_per_week != null
+        ? Number(profile.target_rate_kg_per_week)
+        : null,
+    activityLevel: profile.activity_level ?? '',
+    workoutFrequency: profile.workout_frequency ?? '',
+    dietaryRestriction: profile.dietary_restriction ?? '',
+    foodPreferences: (profile.food_preferences as FoodPreferences | null) ?? {},
+  }
 
   return (
     <div>
@@ -12,16 +44,11 @@ export default async function SettingsPage() {
         Settings
       </h1>
       <p className="mb-6 text-sm text-muted">
-        Update your food preferences anytime — they bias your meal-photo
-        estimates toward what you actually eat.
+        Update your details anytime. Changing your stats or goal recalculates
+        your calorie and macro targets.
       </p>
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <p className="mb-4 text-sm font-medium text-foreground">
-          Food preferences
-        </p>
-        <SettingsForm initial={prefs} />
-      </section>
+      <SettingsForm initial={initial} />
     </div>
   )
 }
