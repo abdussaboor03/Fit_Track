@@ -2,6 +2,11 @@ import Link from 'next/link'
 import { requireProfile, verifyUser } from '@/lib/auth/dal'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { formatShortDate, isoDaysAgo, todayISO } from '@/lib/fitness/date'
+import {
+  dashboardStatusLine,
+  greetingFor,
+  loggingStreak,
+} from '@/lib/fitness/dashboard'
 import { BmiStat } from '@/components/bmi-stat'
 import { WeightChart, type WeightPoint } from './weight-chart'
 
@@ -13,8 +18,10 @@ export default async function DashboardPage() {
   const today = todayISO()
   const weekAgo = isoDaysAgo(6)
   const chartStart = isoDaysAgo(90)
+  const streakStart = isoDaysAgo(60)
 
-  const [mealsRes, weightsRes, gymRes, todayLogRes] = await Promise.all([
+  const [mealsRes, weightsRes, gymRes, todayLogRes, streakLogsRes, streakMealsRes] =
+    await Promise.all([
     supabase
       .from('meals')
       .select('calories, protein_g, carbs_g, fat_g')
@@ -35,10 +42,20 @@ export default async function DashboardPage() {
       .gte('log_date', weekAgo),
     supabase
       .from('daily_logs')
-      .select('water_ml')
+      .select('weight_kg, water_ml, steps, went_gym')
       .eq('user_id', userId)
       .eq('log_date', today)
       .maybeSingle(),
+    supabase
+      .from('daily_logs')
+      .select('log_date, weight_kg, water_ml, steps, went_gym')
+      .eq('user_id', userId)
+      .gte('log_date', streakStart),
+    supabase
+      .from('meals')
+      .select('log_date')
+      .eq('user_id', userId)
+      .gte('log_date', streakStart),
   ])
 
   const meals = mealsRes.data ?? []
@@ -62,19 +79,66 @@ export default async function DashboardPage() {
 
   const gymThisWeek = gymRes.data?.length ?? 0
 
-  const waterMl = Number(todayLogRes.data?.water_ml ?? 0)
+  const todayLog = todayLogRes.data
+  const waterMl = Number(todayLog?.water_ml ?? 0)
   const waterTarget = profile.water_target_ml ?? 2500
 
   const calTarget = profile.daily_calorie_target ?? 0
   const calLeft = Math.max(0, calTarget - consumed.calories)
 
+  // --- greeting + status line ---
+  const now = new Date()
+  const greeting = greetingFor(now)
+  const firstName = profile.full_name?.split(' ')[0] ?? 'there'
+
+  const hasAnyLog =
+    meals.length > 0 ||
+    waterMl > 0 ||
+    todayLog?.weight_kg != null ||
+    todayLog?.steps != null ||
+    todayLog?.went_gym === true
+
+  const statusLine = dashboardStatusLine({
+    hasAnyLog,
+    hour: now.getHours(),
+    calories: consumed.calories,
+    calorieTarget: calTarget,
+    protein: consumed.protein,
+    proteinTarget: profile.daily_protein_g ?? 0,
+    water: waterMl,
+    waterTarget,
+  })
+
+  // A day counts toward the streak if it has a meal or any daily_logs activity.
+  const loggedDates = new Set<string>()
+  for (const r of streakMealsRes.data ?? []) {
+    loggedDates.add(r.log_date as string)
+  }
+  for (const r of streakLogsRes.data ?? []) {
+    if (
+      r.weight_kg != null ||
+      Number(r.water_ml ?? 0) > 0 ||
+      r.steps != null ||
+      r.went_gym === true
+    ) {
+      loggedDates.add(r.log_date as string)
+    }
+  }
+  const streak = loggingStreak(loggedDates, today)
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Hi {profile.full_name?.split(' ')[0] ?? 'there'}
+          {greeting}, {firstName}
         </h1>
-        <p className="text-sm text-muted">Here&apos;s your day so far.</p>
+        <p className="text-sm text-muted">{statusLine}</p>
+        {streak >= 2 && (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+            {streak}-day logging streak
+          </p>
+        )}
       </div>
 
       {/* Calories */}
