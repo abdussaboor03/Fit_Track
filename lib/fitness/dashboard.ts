@@ -46,6 +46,90 @@ export function dashboardStatusLine(s: StatusInput): string {
   return "You're on track today."
 }
 
+// --- "Your next move": one rule-based recommendation from existing data ---
+
+export type NextMove = {
+  text: string
+  actionLabel: string
+  actionHref: string
+}
+
+export type NextMoveInput = {
+  hour: number
+  mealCount: number
+  calories: number
+  calorieTarget: number
+  protein: number
+  proteinTarget: number
+  water: number
+  waterTarget: number
+}
+
+// Nothing logged this late in the day is the most important thing to surface.
+const DINNER_HOUR = 20
+
+// Expected share of daily intake by this hour, over a rough 08:00–21:00 eating
+// window. Used to judge whether things are "on pace" for the time of day.
+function paceFraction(hour: number): number {
+  return Math.max(0, Math.min(1, (hour - 8) / 13))
+}
+function onPace(value: number, target: number, hour: number): boolean {
+  if (target <= 0) return true
+  return value >= paceFraction(hour) * target * 0.85
+}
+
+const LOG_MEAL = { actionLabel: 'Log meal', actionHref: '/log/meal' }
+const ADD_WATER = { actionLabel: 'Add water', actionHref: '/log/daily' }
+
+// Picks the single most relevant next action. Priority-ordered: the first rule
+// that applies wins. Pure logic over data already collected — no AI call.
+export function nextMove(s: NextMoveInput): NextMove {
+  // 1. Late in the day with nothing logged at all.
+  if (s.hour >= DINNER_HOUR && s.mealCount === 0) {
+    return {
+      text: "You haven't logged anything today. Add your first meal to get an accurate picture.",
+      ...LOG_MEAL,
+    }
+  }
+
+  // 2. Protein well behind pace once the afternoon is underway.
+  if (s.proteinTarget > 0 && s.hour >= 15 && s.protein < 0.6 * s.proteinTarget) {
+    const gap = Math.max(0, Math.round(s.proteinTarget - s.protein))
+    return {
+      text: `Add ~${gap}g of protein at your next meal to stay close to today's target.`,
+      ...LOG_MEAL,
+    }
+  }
+
+  // 3. Water behind, later in the day.
+  if (s.waterTarget > 0 && s.hour >= 17 && s.water < 0.5 * s.waterTarget) {
+    const shortMl = Math.max(0, Math.round(s.waterTarget - s.water))
+    return {
+      text: `You're ${shortMl}ml short of your water goal — one full bottle gets you most of the way there.`,
+      ...ADD_WATER,
+    }
+  }
+
+  // 4. Core targets all on pace for the time of day.
+  if (
+    s.mealCount > 0 &&
+    onPace(s.calories, s.calorieTarget, s.hour) &&
+    onPace(s.protein, s.proteinTarget, s.hour) &&
+    onPace(s.water, s.waterTarget, s.hour)
+  ) {
+    return {
+      text: "You're on track — keep today simple and repeat what's working.",
+      ...LOG_MEAL,
+    }
+  }
+
+  // 5. Fallback.
+  return {
+    text: "Log today's meals to see your next move.",
+    ...LOG_MEAL,
+  }
+}
+
 // Consecutive logged days ending today. If today isn't logged yet, a streak
 // running through yesterday still counts as active (it only breaks once a whole
 // day is missed).

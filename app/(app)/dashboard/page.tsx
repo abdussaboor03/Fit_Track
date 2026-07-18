@@ -6,6 +6,7 @@ import {
   dashboardStatusLine,
   greetingFor,
   loggingStreak,
+  nextMove,
 } from '@/lib/fitness/dashboard'
 import { BmiStat } from '@/components/bmi-stat'
 import { CalorieArc } from './calorie-arc'
@@ -98,13 +99,26 @@ export default async function DashboardPage() {
     todayLog?.steps != null ||
     todayLog?.went_gym === true
 
+  const proteinTarget = profile.daily_protein_g ?? 0
+
   const statusLine = dashboardStatusLine({
     hasAnyLog,
     hour,
     calories: consumed.calories,
     calorieTarget: calTarget,
     protein: consumed.protein,
-    proteinTarget: profile.daily_protein_g ?? 0,
+    proteinTarget,
+    water: waterMl,
+    waterTarget,
+  })
+
+  const move = nextMove({
+    hour,
+    mealCount: meals.length,
+    calories: consumed.calories,
+    calorieTarget: calTarget,
+    protein: consumed.protein,
+    proteinTarget,
     water: waterMl,
     waterTarget,
   })
@@ -143,6 +157,22 @@ export default async function DashboardPage() {
 
       {/* Calories — hero arc */}
       <CalorieArc consumed={consumed.calories} target={calTarget} />
+
+      {/* Your next move — one rule-based recommendation */}
+      <section className="rounded-2xl border border-border bg-surface p-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+          Your next move
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-foreground">
+          {move.text}
+        </p>
+        <Link
+          href={move.actionHref}
+          className="mt-4 inline-flex items-center rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+        >
+          {move.actionLabel}
+        </Link>
+      </section>
 
       {/* Water */}
       <section className="rounded-2xl border border-border bg-surface p-6">
