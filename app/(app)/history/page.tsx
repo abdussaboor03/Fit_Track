@@ -22,11 +22,13 @@ export default async function HistoryPage({
   const { userId } = await verifyUser()
   const supabase = await createSupabaseServerClient()
 
-  // Resolve the target month (YYYY-MM), defaulting to the current one.
-  const now = new Date()
+  // Resolve the target month (YYYY-MM), defaulting to the current one. The
+  // default is derived from the London calendar date so the month doesn't flip
+  // early on a UTC server around midnight.
+  const todayStr = todayISO()
   const match = /^(\d{4})-(\d{2})$/.exec(month ?? '')
-  const year = match ? Number(match[1]) : now.getFullYear()
-  const month1 = match ? Number(match[2]) : now.getMonth() + 1
+  const year = match ? Number(match[1]) : Number(todayStr.slice(0, 4))
+  const month1 = match ? Number(match[2]) : Number(todayStr.slice(5, 7))
 
   const daysInMonth = new Date(year, month1, 0).getDate()
   const rangeStart = `${year}-${pad(month1)}-01`

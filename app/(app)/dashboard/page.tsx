@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireProfile, verifyUser } from '@/lib/auth/dal'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { formatShortDate, isoDaysAgo, todayISO } from '@/lib/fitness/date'
+import { formatShortDate, isoDaysAgo, nowHour, todayISO } from '@/lib/fitness/date'
 import {
   dashboardStatusLine,
   greetingFor,
@@ -87,8 +87,8 @@ export default async function DashboardPage() {
   const calLeft = Math.max(0, calTarget - consumed.calories)
 
   // --- greeting + status line ---
-  const now = new Date()
-  const greeting = greetingFor(now)
+  const hour = nowHour()
+  const greeting = greetingFor(hour)
   const firstName = profile.full_name?.split(' ')[0] ?? 'there'
 
   const hasAnyLog =
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
 
   const statusLine = dashboardStatusLine({
     hasAnyLog,
-    hour: now.getHours(),
+    hour,
     calories: consumed.calories,
     calorieTarget: calTarget,
     protein: consumed.protein,

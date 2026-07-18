@@ -2,10 +2,11 @@
 // collected (meals, daily_logs, profiles) — no AI calls, no new tables. Tone is
 // deliberately reassuring: no failure/guilt framing anywhere.
 
-export function greetingFor(date: Date = new Date()): string {
-  const h = date.getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
+// Takes an explicit hour (0–23) so the caller controls the timezone — pass
+// nowHour() from lib/fitness/date, which is London-based.
+export function greetingFor(hour: number): string {
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
   return 'Good evening'
 }
 
