@@ -11,7 +11,8 @@ import {
 import { BmiStat } from '@/components/bmi-stat'
 import { CalorieArc } from './calorie-arc'
 import { WaterTile } from './water-tile'
-import { WeightChart, type WeightPoint } from './weight-chart'
+import { WeightJourney } from './weight-journey'
+import type { WeightPoint } from './weight-chart'
 
 const STEP_TARGET = 10000
 
@@ -25,8 +26,15 @@ export default async function DashboardPage() {
   const chartStart = isoDaysAgo(90)
   const streakStart = isoDaysAgo(60)
 
-  const [mealsRes, weightsRes, gymRes, todayLogRes, streakLogsRes, streakMealsRes] =
-    await Promise.all([
+  const [
+    mealsRes,
+    weightsRes,
+    gymRes,
+    todayLogRes,
+    streakLogsRes,
+    streakMealsRes,
+    startWeightRes,
+  ] = await Promise.all([
     supabase
       .from('meals')
       .select('calories, protein_g, carbs_g, fat_g')
@@ -61,6 +69,14 @@ export default async function DashboardPage() {
       .select('log_date')
       .eq('user_id', userId)
       .gte('log_date', streakStart),
+    supabase
+      .from('daily_logs')
+      .select('weight_kg')
+      .eq('user_id', userId)
+      .not('weight_kg', 'is', null)
+      .order('log_date', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const meals = mealsRes.data ?? []
@@ -129,6 +145,39 @@ export default async function DashboardPage() {
   const stepsToday = todayLog?.steps != null ? Number(todayLog.steps) : null
   const wentGymToday = todayLog?.went_gym === true
 
+  // --- weight journey ---
+  const mean = (nums: number[]) =>
+    nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null
+
+  const weighInCount = chartData.length
+  const startKg =
+    startWeightRes.data?.weight_kg != null
+      ? Number(startWeightRes.data.weight_kg)
+      : (chartData[0]?.weight ?? null)
+  const currentKg = latestWeight
+  const targetKg =
+    profile.target_weight_kg != null ? Number(profile.target_weight_kg) : null
+
+  const last7 = chartData
+    .filter((p) => p.date >= isoDaysAgo(6))
+    .map((p) => p.weight)
+  const prev7 = chartData
+    .filter((p) => p.date >= isoDaysAgo(13) && p.date < isoDaysAgo(6))
+    .map((p) => p.weight)
+  const movingAvg = mean(last7)
+  const prevAvg = mean(prev7)
+
+  const weeklyChange =
+    movingAvg != null && prevAvg != null ? movingAvg - prevAvg : null
+  const totalChange =
+    startKg != null && currentKg != null ? currentKg - startKg : null
+  const journeySpan =
+    startKg != null && targetKg != null ? targetKg - startKg : null
+  const pctComplete =
+    journeySpan && journeySpan !== 0 && currentKg != null
+      ? Math.max(0, Math.min(100, ((currentKg - startKg!) / journeySpan) * 100))
+      : null
+
   // A day counts toward the streak if it has a meal or any daily_logs activity.
   const loggedDates = new Set<string>()
   for (const r of streakMealsRes.data ?? []) {
@@ -192,6 +241,9 @@ export default async function DashboardPage() {
             <span className="text-xs font-normal text-muted"> / {proteinTarget}g</span>
           </p>
           <MiniBar value={consumed.protein} max={proteinTarget} color="bg-success" />
+          <p className="mt-2 text-[11px] text-muted">
+            C {Math.round(consumed.carbs)}g · F {Math.round(consumed.fat)}g
+          </p>
         </div>
 
         {/* Water (interactive) */}
@@ -249,21 +301,17 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Weight trend */}
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-foreground">Weight trend</p>
-          {latestWeight != null && (
-            <p className="text-sm text-muted">
-              Latest{' '}
-              <span className="font-semibold text-foreground">
-                {latestWeight} kg
-              </span>
-            </p>
-          )}
-        </div>
-        <WeightChart data={chartData} unit="kg" />
-      </section>
+      {/* Weight journey */}
+      <WeightJourney
+        weighInCount={weighInCount}
+        startKg={startKg}
+        currentKg={currentKg}
+        targetKg={targetKg}
+        movingAvg={movingAvg}
+        totalChange={totalChange}
+        pctComplete={pctComplete}
+        weeklyChange={weeklyChange}
+      />
 
       {/* BMI (de-emphasized further in a later step) */}
       {latestWeight != null && profile.height_cm != null && (
