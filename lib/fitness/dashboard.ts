@@ -40,7 +40,7 @@ export function dashboardStatusLine(s: StatusInput): string {
 
   // Protein notably behind pace once the day is well underway.
   if (s.proteinTarget > 0 && s.hour >= 15 && s.protein < 0.6 * s.proteinTarget) {
-    return 'Protein needs attention.'
+    return "Protein's running a little behind — easy to catch up."
   }
 
   return "You're on track today."
@@ -87,7 +87,7 @@ export function nextMove(s: NextMoveInput): NextMove {
   // 1. Late in the day with nothing logged at all.
   if (s.hour >= DINNER_HOUR && s.mealCount === 0) {
     return {
-      text: "You haven't logged anything today. Add your first meal to get an accurate picture.",
+      text: 'Nothing logged yet today — add your first meal for an accurate picture.',
       ...LOG_MEAL,
     }
   }
@@ -105,7 +105,7 @@ export function nextMove(s: NextMoveInput): NextMove {
   if (s.waterTarget > 0 && s.hour >= 17 && s.water < 0.5 * s.waterTarget) {
     const shortMl = Math.max(0, Math.round(s.waterTarget - s.water))
     return {
-      text: `You're ${shortMl}ml short of your water goal — one full bottle gets you most of the way there.`,
+      text: `About ${shortMl}ml left to your water goal — one full bottle gets you most of the way there.`,
       ...ADD_WATER,
     }
   }
