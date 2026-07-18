@@ -8,6 +8,7 @@ import {
   loggingStreak,
 } from '@/lib/fitness/dashboard'
 import { BmiStat } from '@/components/bmi-stat'
+import { CalorieArc } from './calorie-arc'
 import { WeightChart, type WeightPoint } from './weight-chart'
 
 export default async function DashboardPage() {
@@ -84,7 +85,6 @@ export default async function DashboardPage() {
   const waterTarget = profile.water_target_ml ?? 2500
 
   const calTarget = profile.daily_calorie_target ?? 0
-  const calLeft = Math.max(0, calTarget - consumed.calories)
 
   // --- greeting + status line ---
   const hour = nowHour()
@@ -141,23 +141,8 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Calories */}
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <p className="text-sm text-muted">Calories</p>
-            <p className="text-3xl font-bold text-foreground">
-              {Math.round(consumed.calories).toLocaleString()}
-              <span className="text-base font-normal text-muted">
-                {' '}
-                / {calTarget.toLocaleString()}
-              </span>
-            </p>
-          </div>
-          <p className="text-sm text-muted">{calLeft.toLocaleString()} left</p>
-        </div>
-        <ProgressBar value={consumed.calories} max={calTarget} />
-      </section>
+      {/* Calories — hero arc */}
+      <CalorieArc consumed={consumed.calories} target={calTarget} />
 
       {/* Water */}
       <section className="rounded-2xl border border-border bg-surface p-6">

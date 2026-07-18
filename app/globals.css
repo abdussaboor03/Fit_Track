@@ -268,3 +268,11 @@ body {
     text-shadow: 0 0 24px var(--accent-soft);
   }
 }
+
+/* Dashboard calorie arc — draws the progress stroke in from empty on load.
+   Animates to the element's own stroke-dashoffset, so only `from` is needed. */
+@keyframes arcDraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
