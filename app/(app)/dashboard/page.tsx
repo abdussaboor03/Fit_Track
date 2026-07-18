@@ -10,7 +10,10 @@ import {
 } from '@/lib/fitness/dashboard'
 import { BmiStat } from '@/components/bmi-stat'
 import { CalorieArc } from './calorie-arc'
+import { WaterTile } from './water-tile'
 import { WeightChart, type WeightPoint } from './weight-chart'
+
+const STEP_TARGET = 10000
 
 export default async function DashboardPage() {
   const profile = await requireProfile()
@@ -123,6 +126,9 @@ export default async function DashboardPage() {
     waterTarget,
   })
 
+  const stepsToday = todayLog?.steps != null ? Number(todayLog.steps) : null
+  const wentGymToday = todayLog?.went_gym === true
+
   // A day counts toward the streak if it has a meal or any daily_logs activity.
   const loggedDates = new Set<string>()
   for (const r of streakMealsRes.data ?? []) {
@@ -174,43 +180,73 @@ export default async function DashboardPage() {
         </Link>
       </section>
 
-      {/* Water */}
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <p className="text-sm text-muted">Water</p>
-            <p className="text-3xl font-bold text-foreground">
-              {(waterMl / 1000).toFixed(waterMl % 1000 === 0 ? 0 : 1)}
-              <span className="text-base font-normal text-muted">
-                {' '}
-                / {(waterTarget / 1000).toFixed(waterTarget % 1000 === 0 ? 0 : 1)} L
-              </span>
-            </p>
-          </div>
-          <Link href="/log/daily" className="text-sm text-accent hover:underline">
-            + Add
-          </Link>
+      {/* Today's essentials — compact, secondary to the Arc */}
+      <section className="grid grid-cols-2 gap-3">
+        {/* Protein */}
+        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4">
+          <TileHead label="Protein">
+            <ellipse cx="9" cy="10" rx="5" ry="6" stroke="currentColor" strokeWidth="1.5" />
+          </TileHead>
+          <p className="mt-2 text-lg font-semibold text-foreground">
+            {Math.round(consumed.protein)}
+            <span className="text-xs font-normal text-muted"> / {proteinTarget}g</span>
+          </p>
+          <MiniBar value={consumed.protein} max={proteinTarget} color="bg-success" />
         </div>
-        <ProgressBar value={waterMl} max={waterTarget} />
-      </section>
 
-      {/* Macros */}
-      <section className="grid grid-cols-3 gap-3">
-        <MacroCard
-          label="Protein"
-          value={Math.round(consumed.protein)}
-          target={profile.daily_protein_g ?? 0}
-        />
-        <MacroCard
-          label="Carbs"
-          value={Math.round(consumed.carbs)}
-          target={profile.daily_carb_g ?? 0}
-        />
-        <MacroCard
-          label="Fat"
-          value={Math.round(consumed.fat)}
-          target={profile.daily_fat_g ?? 0}
-        />
+        {/* Water (interactive) */}
+        <WaterTile logDate={today} initialMl={waterMl} targetMl={waterTarget} />
+
+        {/* Steps */}
+        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4">
+          <TileHead label="Steps">
+            <path
+              d="M2 11l3-4 2.5 4.5L10 4l2 4h4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </TileHead>
+          <p className="mt-2 text-lg font-semibold text-foreground">
+            {stepsToday != null ? stepsToday.toLocaleString() : '—'}
+            <span className="text-xs font-normal text-muted">
+              {' '}
+              / {STEP_TARGET.toLocaleString()}
+            </span>
+          </p>
+          <MiniBar value={stepsToday ?? 0} max={STEP_TARGET} color="bg-accent" />
+        </div>
+
+        {/* Training */}
+        <div className="flex flex-col rounded-2xl border border-border bg-surface p-4">
+          <TileHead label="Training">
+            <path
+              d="M4 7v4M6.5 5.5v7M11.5 5.5v7M14 7v4M6.5 9h5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </TileHead>
+          {wentGymToday ? (
+            <>
+              <p className="mt-2 text-lg font-semibold text-foreground">Logged</p>
+              <p className="mt-auto pt-2 text-xs text-muted">
+                {gymThisWeek} this week
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-muted">Not logged yet</p>
+              <Link
+                href="/log/daily"
+                className="mt-auto pt-2 text-sm font-semibold text-accent hover:underline"
+              >
+                Add session
+              </Link>
+            </>
+          )}
+        </div>
       </section>
 
       {/* Weight trend */}
@@ -229,26 +265,14 @@ export default async function DashboardPage() {
         <WeightChart data={chartData} unit="kg" />
       </section>
 
-      {/* Training + BMI */}
-      <div className="grid grid-cols-2 gap-3">
-        <section className="rounded-2xl border border-border bg-surface p-6">
-          <p className="text-sm text-muted">This week&apos;s training</p>
-          <p className="mt-1 text-3xl font-bold text-foreground">
-            {gymThisWeek}
-            <span className="text-base font-normal text-muted">
-              {' '}
-              {gymThisWeek === 1 ? 'session' : 'sessions'}
-            </span>
-          </p>
-        </section>
-        {latestWeight != null && profile.height_cm != null && (
-          <BmiStat
-            heightCm={Number(profile.height_cm)}
-            weightKg={latestWeight}
-            compact
-          />
-        )}
-      </div>
+      {/* BMI (de-emphasized further in a later step) */}
+      {latestWeight != null && profile.height_cm != null && (
+        <BmiStat
+          heightCm={Number(profile.height_cm)}
+          weightKg={latestWeight}
+          compact
+        />
+      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">
@@ -275,36 +299,40 @@ export default async function DashboardPage() {
   )
 }
 
-function ProgressBar({ value, max }: { value: number; max: number }) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
-  const over = max > 0 && value > max
+// Compact tile header: a small line icon (children are SVG paths) + label.
+function TileHead({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
-      <div
-        className={`h-full rounded-full transition-all ${over ? 'bg-warning' : 'bg-accent'}`}
-        style={{ width: `${pct}%` }}
-      />
+    <div className="flex items-center gap-2 text-muted">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        {children}
+      </svg>
+      <span className="text-xs font-medium">{label}</span>
     </div>
   )
 }
 
-function MacroCard({
-  label,
+function MiniBar({
   value,
-  target,
+  max,
+  color,
 }: {
-  label: string
   value: number
-  target: number
+  max: number
+  color: string
 }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mb-2 mt-0.5 text-lg font-semibold text-foreground">
-        {value}
-        <span className="text-xs font-normal text-muted">/{target}g</span>
-      </p>
-      <ProgressBar value={value} max={target} />
+    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+      <div
+        className={`h-full rounded-full transition-all ${color}`}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   )
 }

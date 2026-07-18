@@ -96,7 +96,7 @@ export function nextMove(s: NextMoveInput): NextMove {
   if (s.proteinTarget > 0 && s.hour >= 15 && s.protein < 0.6 * s.proteinTarget) {
     const gap = Math.max(0, Math.round(s.proteinTarget - s.protein))
     return {
-      text: `Add ~${gap}g of protein at your next meal to stay close to today's target.`,
+      text: `Add ~${gap}g of protein across your remaining meals to stay close to today's target.`,
       ...LOG_MEAL,
     }
   }
